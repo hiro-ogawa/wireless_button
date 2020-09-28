@@ -1,4 +1,5 @@
-#include <M5Stack.h>
+#include <M5Atom.h>
+#include <SoftwareSerial.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
@@ -22,6 +23,8 @@ TaskHandle_t taskSendRunningState_handl;
 SemaphoreHandle_t receive_control_state_mu = NULL;
 uint8_t receive_control_state = 0;  // 0: stop 1: run
 uint8_t running_state = 0;
+
+SoftwareSerial GroveSerial(26, 32);  // RX, TX
 
 void taskStateObserver(void *params) {
   WiFi.config(ip, gateway, subnet, dns);
@@ -56,20 +59,45 @@ void taskStateObserver(void *params) {
 
   while (true) {
     M5.update();
-    M5.Lcd.fillRect(0, 0, 100, 50, TFT_BLACK);
-    M5.Lcd.setCursor(10, 10);
 
     xStatus = xSemaphoreTake(receive_control_state_mu, 500UL);
     if (xStatus == pdTRUE) {
-      if (receive_control_state == 1) {
-        // running
-        //      M5.Lcd.fillRect(0, 0, 100, 50, TFT_BLACK);
-        M5.Lcd.println("run!!!");
-        receive_control_state = 0;
-      } else {
-        M5.Lcd.println("stop!!!");
-        // TODO: stop
+      char SerialCmd;
+      if (M5.Btn.isPressed()) receive_control_state = 1;
+      switch (receive_control_state) {
+        case 0:
+          // Stop
+          SerialCmd = 'S';
+          break;
+        case 1:
+          // Run
+          SerialCmd = 'G';
+          break;
+        case 2:
+          // Left
+          SerialCmd = 'H';
+          break;
+        case 3:
+          // Down
+          SerialCmd = 'J';
+          break;
+        case 4:
+          // Up
+          SerialCmd = 'K';
+          break;
+        case 5:
+          // Right
+          SerialCmd = 'L';
+          break;
       }
+      if (receive_control_state == 0) {
+        M5.dis.drawpix(0, 0x00ff00);  // GRB
+      } else {
+        M5.dis.drawpix(0, 0xff0000);  // GRB
+        receive_control_state = 0;
+      }
+      Serial.println(SerialCmd);
+      GroveSerial.println(SerialCmd);
     }
     xSemaphoreGive(receive_control_state_mu);
 
@@ -78,12 +106,12 @@ void taskStateObserver(void *params) {
 }
 
 void setup() {
-  M5.begin();
-  M5.Lcd.fillScreen(TFT_BLACK);
-
-  M5.Lcd.setTextSize(2);
+  M5.begin(true, false, true);
+  delay(50);
+  M5.dis.drawpix(0, 0xffffff);
 
   Serial.begin(115200);
+  GroveSerial.begin(9600);
 
   receive_control_state_mu = xSemaphoreCreateMutex();
 
