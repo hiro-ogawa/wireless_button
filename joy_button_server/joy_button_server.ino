@@ -6,12 +6,13 @@
 #include "config.h"
 
 // #define USE_SOFT_AP
-const IPAddress ip(192, 168, 88, 1);
+const IPAddress ip(192, 168, 88, 4);
 const IPAddress gateway(192, 168, 88, 254);
 const IPAddress subnet(255, 255, 255, 0);
 const IPAddress dns(192, 168, 88, 254);
 
 const IPAddress clientIP(192, 168, 88, 2);
+const IPAddress clientIP2(192, 168, 88, 3);
 
 const int UDP_PORT = 55555;
 
@@ -25,8 +26,6 @@ uint8_t control_state = 0;  // 0: stop 1: run
 
 boolean heartbeat = false;
 
-const int buttonPin = 32;  // the number of the pushbutton pin
-
 // Joy
 #define FACE_JOY_ADDR 0x5e
 uint8_t x_data_L;
@@ -38,32 +37,6 @@ uint16_t y_data;
 uint8_t button_data;
 char data[100];
 
-//******** core 0 task *************
-void taskController(void *params) {
-  while (true) {
-    M5.update();
-
-    if (heartbeat) {
-      M5.Lcd.fillRect(0, 0, 50, 50, TFT_RED);  // TODO: heart icon
-      heartbeat = false;
-    } else {
-      M5.Lcd.fillRect(0, 0, 50, 50, TFT_BLACK);  // TODO: heart icon
-    }
-
-    // TODO: rendar state
-
-    bool btn_is_pressed = false;
-    btn_is_pressed = M5.BtnA.isPressed();
-    if (btn_is_pressed) {
-      control_state = 1;  // run
-    } else {
-      control_state = 0;  // stop
-    }
-    delay(10);
-  }
-}
-
-//********* core 1 task ************
 void setup() {
   M5.begin();
 
@@ -75,10 +48,6 @@ void setup() {
   Serial.begin(115200);
 
   setupServer();
-  // xTaskCreatePinnedToCore(&taskController, "taskController", 8192, NULL, 10,
-  //                         &task_handl, 0);
-
-  pinMode(buttonPin, INPUT_PULLUP);
 
   JoyInit();
 
@@ -152,7 +121,8 @@ void loop() {
   Serial.print("control_state: ");
   Serial.println(control_state);
 
-  sendControlState();
+  sendControlState(clientIP);
+  sendControlState(clientIP2);
   delay(100);  // TODO: remove
 }
 
@@ -166,8 +136,8 @@ void receiveFromCar() {
   }
 }
 
-void sendControlState() {
-  udp.beginPacket(clientIP, UDP_PORT);
+void sendControlState(const IPAddress ip) {
+  udp.beginPacket(ip, UDP_PORT);
   udp.write(control_state);
   udp.endPacket();
 }

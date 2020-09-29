@@ -5,7 +5,7 @@
 
 #include "config.h"
 
-const IPAddress ip(192, 168, 88, 2);
+const IPAddress ip(192, 168, 88, 3);
 const IPAddress gateway(192, 168, 88, 254);
 const IPAddress subnet(255, 255, 255, 0);
 const IPAddress dns(192, 168, 88, 254);
