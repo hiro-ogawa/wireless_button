@@ -1,12 +1,12 @@
 #include <FastLED.h>
-#include <M5Atom.h>
+// #include <M5Atom.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
 #include <Wire.h>
 
 #include "config.h"
 
-// #define USE_SOFT_AP
+#define USE_SOFT_AP
 const IPAddress ip(192, 168, 88, 1);
 const IPAddress gateway(192, 168, 88, 254);
 const IPAddress subnet(255, 255, 255, 0);
@@ -32,7 +32,7 @@ const uint8_t ledNum = 48;
 CRGB leds[ledNum];
 
 void setup() {
-  M5.begin(true, false, true);
+  // M5.begin(true, false, true);
   Serial.begin(115200);
 
 #ifdef USE_SOFT_AP
@@ -42,10 +42,9 @@ void setup() {
 #endif
 
   pinMode(buttonPin, INPUT_PULLUP);
-  // FastLED.addLeds<NEOPIXEL, ledPin>(leds, ledNum);
-  // FastLED.setBrightness(100);
-  // FastLED.clear();
-  Serial.println(FastLED.count());
+  FastLED.addLeds<NEOPIXEL, ledPin>(leds, ledNum);
+  FastLED.setBrightness(100);
+  FastLED.clear();
 
   delay(500);  // TODO: task起動待ち。せまふぉ？
 }
@@ -66,8 +65,8 @@ void init_soft_ap() {
 }
 
 void button_led_all(CRGB c) {
-  // for (int i = 0; i < ledNum; i++) leds[i] = c;
-  // FastLED.show();
+  for (int i = 0; i < ledNum; i++) leds[i] = c;
+  FastLED.show();
 }
 
 void init_wifi_client() {
@@ -86,11 +85,11 @@ void init_wifi_client() {
     delay(500);
     Serial.print(".");
     if (blink) {
-      M5.dis.drawpix(0, 0x0000ff);
-      // button_led_all(CRGB(0, 0, 255));
+      // M5.dis.drawpix(0, 0x0000ff);
+      button_led_all(CRGB(0, 0, 255));
     } else {
-      M5.dis.drawpix(0, 0x000000);
-      // button_led_all(CRGB(0, 0, 0));
+      // M5.dis.drawpix(0, 0x000000);
+      button_led_all(CRGB(0, 0, 0));
     }
     blink = !blink;
   }
@@ -102,21 +101,22 @@ void init_wifi_client() {
 }
 
 void loop() {
-  M5.update();
+  // M5.update();
   receiveFromCar();
 
   control_state = 0;
   // if (M5.BtnA.isPressed() || !button_data) {
-  if (M5.Btn.isPressed() || !digitalRead(buttonPin)) {
-    control_state = 1;            // Run
-    M5.dis.drawpix(0, 0xff0000);  // GRB Green
+  // if (M5.Btn.isPressed() || !digitalRead(buttonPin)) {
+  if (!digitalRead(buttonPin)) {
+    control_state = 1;  // Run
+    // M5.dis.drawpix(0, 0xff0000);  // GRB Green
     button_led_all(CRGB(0, 255, 0));
   } else {
-    M5.dis.drawpix(0, 0x00ff00);  // GRB Red
+    // M5.dis.drawpix(0, 0x00ff00);  // GRB Red
     button_led_all(CRGB(255, 0, 0));
   }
-  Serial.print("control_state: ");
-  Serial.println(control_state);
+  // Serial.print("control_state: ");
+  // Serial.println(control_state);
 
   sendControlState(clientIP);
   sendControlState(clientIP2);
